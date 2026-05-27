@@ -10,44 +10,196 @@ Rules you always follow:
 6. Keep replies concise — 3 to 6 sentences of actual conversation content, plus optional correction/tip.
 7. Never break character. You are always DailySpeak.`;
 
+const GREETING = `Hello! [PT: Olá!] I'm DailySpeak, your English coach. [PT: Eu sou o DailySpeak, seu professor de inglês.] 😊
+
+I'm here to help you practice speaking English every day. [PT: Estou aqui para te ajudar a praticar inglês todo dia.]
+
+Let's start simple — What is your name? [PT: Vamos começar simples — Qual é o seu nome?]`;
+
+/* ── Storage helpers ──────────────────────────────────────────────────────── */
+const LS_CONVS  = "ds_conversations";
+const LS_ACTIVE = "ds_active_conv";
+const LS_THEME  = "ds_theme";
+const LS_TRANS  = "ds_translations";
+
+function loadConvs() {
+  try { return JSON.parse(localStorage.getItem(LS_CONVS) || "[]"); } catch { return []; }
+}
+
+function saveConvs(convs) {
+  localStorage.setItem(LS_CONVS, JSON.stringify(convs));
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
 /* ── State ────────────────────────────────────────────────────────────────── */
-const history = [{ role: "system", content: SYSTEM_PROMPT }];
+let convs      = loadConvs();
+let activeId   = null;
+let history    = [];   // OpenAI message array for the active conversation
 
 /* ── DOM refs ─────────────────────────────────────────────────────────────── */
-const chatEl      = document.getElementById("chat");
-const inputEl     = document.getElementById("user-input");
-const sendBtn     = document.getElementById("send-btn");
-const translateBtn = document.getElementById("translate-btn");
+const chatEl        = document.getElementById("chat");
+const inputEl       = document.getElementById("user-input");
+const sendBtn       = document.getElementById("send-btn");
+const translateBtn  = document.getElementById("translate-btn");
+const themeBtn      = document.getElementById("theme-btn");
+const newChatBtn    = document.getElementById("new-chat-btn");
+const sidebarToggle = document.getElementById("sidebar-toggle");
+const sidebar       = document.getElementById("sidebar");
+const convListEl    = document.getElementById("conv-list");
+
+/* ── Theme ────────────────────────────────────────────────────────────────── */
+function applyTheme(dark) {
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  themeBtn.textContent = dark ? "☀️" : "🌙";
+  themeBtn.title = dark ? "Tema claro" : "Tema escuro";
+}
+
+let isDark = localStorage.getItem(LS_THEME) === "dark";
+applyTheme(isDark);
+
+themeBtn.addEventListener("click", () => {
+  isDark = !isDark;
+  applyTheme(isDark);
+  localStorage.setItem(LS_THEME, isDark ? "dark" : "light");
+});
 
 /* ── Translation toggle ───────────────────────────────────────────────────── */
-let translationsVisible = false;
+let translationsVisible = localStorage.getItem(LS_TRANS) === "true";
+
+function applyTranslations(on) {
+  document.body.classList.toggle("show-translations", on);
+  translateBtn.classList.toggle("active", on);
+  translateBtn.title = on ? "Esconder traduções" : "Ver traduções em português";
+}
+
+applyTranslations(translationsVisible);
 
 translateBtn.addEventListener("click", () => {
   translationsVisible = !translationsVisible;
-  document.body.classList.toggle("show-translations", translationsVisible);
-  translateBtn.classList.toggle("active", translationsVisible);
-  translateBtn.title = translationsVisible ? "Esconder traduções" : "Ver traduções em português";
+  applyTranslations(translationsVisible);
+  localStorage.setItem(LS_TRANS, translationsVisible);
 });
 
-/* ── Helpers ──────────────────────────────────────────────────────────────── */
-function scrollBottom() {
-  chatEl.scrollTop = chatEl.scrollHeight;
+/* ── Sidebar toggle ───────────────────────────────────────────────────────── */
+let sidebarOpen = true;
+
+sidebarToggle.addEventListener("click", () => {
+  sidebarOpen = !sidebarOpen;
+  sidebar.classList.toggle("collapsed", !sidebarOpen);
+});
+
+/* ── Conversation list UI ─────────────────────────────────────────────────── */
+function renderConvList() {
+  const empty = document.getElementById("sidebar-empty");
+  convListEl.innerHTML = "";
+
+  if (convs.length === 0) {
+    convListEl.appendChild(Object.assign(document.createElement("div"), {
+      id: "sidebar-empty",
+      innerHTML: "Nenhuma conversa ainda.<br/>Comece digitando uma mensagem."
+    }));
+    return;
+  }
+
+  [...convs].reverse().forEach(conv => {
+    const item = document.createElement("div");
+    item.className = "conv-item" + (conv.id === activeId ? " active" : "");
+    item.dataset.id = conv.id;
+
+    const title = document.createElement("div");
+    title.className = "conv-item-title";
+    title.textContent = conv.title || "Nova conversa";
+
+    const del = document.createElement("button");
+    del.className = "conv-delete";
+    del.title = "Excluir";
+    del.textContent = "×";
+    del.addEventListener("click", e => {
+      e.stopPropagation();
+      deleteConv(conv.id);
+    });
+
+    item.appendChild(title);
+    item.appendChild(del);
+    item.addEventListener("click", () => loadConv(conv.id));
+    convListEl.appendChild(item);
+  });
 }
 
+/* ── Load a conversation ──────────────────────────────────────────────────── */
+function loadConv(id) {
+  const conv = convs.find(c => c.id === id);
+  if (!conv) return;
+
+  activeId = id;
+  localStorage.setItem(LS_ACTIVE, id);
+  history  = conv.messages.slice();
+
+  chatEl.innerHTML = "";
+  conv.rendered.forEach(({ role, html }) => {
+    chatEl.innerHTML += html;
+  });
+
+  scrollBottom();
+  renderConvList();
+  inputEl.focus();
+}
+
+function deleteConv(id) {
+  convs = convs.filter(c => c.id !== id);
+  saveConvs(convs);
+  if (activeId === id) startNewConv();
+  else renderConvList();
+}
+
+/* ── New conversation ─────────────────────────────────────────────────────── */
+function startNewConv() {
+  activeId = uid();
+  localStorage.setItem(LS_ACTIVE, activeId);
+  history  = [{ role: "system", content: SYSTEM_PROMPT }];
+
+  chatEl.innerHTML = "";
+  appendCoachMessage(GREETING, false);
+
+  renderConvList();
+  inputEl.focus();
+}
+
+newChatBtn.addEventListener("click", startNewConv);
+
+/* ── Save rendered HTML for persistence ───────────────────────────────────── */
+function persistMessage(role, html) {
+  let conv = convs.find(c => c.id === activeId);
+  if (!conv) {
+    conv = { id: activeId, title: "", messages: history.slice(), rendered: [] };
+    convs.push(conv);
+  }
+  conv.messages = history.slice();
+  conv.rendered.push({ role, html });
+
+  // Title = first user message (truncated)
+  if (!conv.title && role === "user") {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    conv.title = (tmp.textContent || "").trim().slice(0, 42);
+  }
+
+  saveConvs(convs);
+  renderConvList();
+}
+
+/* ── Parse helpers ────────────────────────────────────────────────────────── */
 function parseSentencesWithTranslations(text) {
-  // Split on [PT: ...] tags, interleaving English and Portuguese
   const ptRe = /\[PT:\s*(.*?)\]/g;
   const container = document.createElement("span");
-  let lastIndex = 0;
-  let match;
+  let lastIndex = 0, match;
 
   while ((match = ptRe.exec(text)) !== null) {
-    // English text before this tag
-    const english = text.slice(lastIndex, match.index).trim();
-    if (english) {
-      container.appendChild(document.createTextNode(english + " "));
-    }
-    // Hidden Portuguese translation
+    const english = text.slice(lastIndex, match.index);
+    if (english) container.appendChild(document.createTextNode(english));
     const pt = document.createElement("span");
     pt.className = "translation";
     pt.textContent = "(" + match[1].trim() + ") ";
@@ -55,10 +207,8 @@ function parseSentencesWithTranslations(text) {
     lastIndex = ptRe.lastIndex;
   }
 
-  // Remaining text after last tag
-  const rest = text.slice(lastIndex).trim();
+  const rest = text.slice(lastIndex);
   if (rest) container.appendChild(document.createTextNode(rest));
-
   return container;
 }
 
@@ -69,18 +219,13 @@ function parseCoachContent(raw) {
   const corrections = raw.match(corrRe) || [];
   const tips        = raw.match(tipRe)  || [];
 
-  const main = raw
-    .replace(corrRe, "")
-    .replace(tipRe, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  const main = raw.replace(corrRe, "").replace(tipRe, "").replace(/\n{3,}/g, "\n\n").trim();
 
   const frag = document.createDocumentFragment();
 
   if (main) {
     const el = document.createElement("div");
     el.className = "bubble";
-    // Split by newlines, parse each line for translations
     main.split("\n").forEach((line, i, arr) => {
       el.appendChild(parseSentencesWithTranslations(line));
       if (i < arr.length - 1) el.appendChild(document.createElement("br"));
@@ -126,7 +271,12 @@ function buildRow(role) {
   return { row, content };
 }
 
-function appendUserMessage(text) {
+function scrollBottom() {
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+/* ── Append messages ──────────────────────────────────────────────────────── */
+function appendUserMessage(text, persist = true) {
   const { row, content } = buildRow("user");
   const bubble = document.createElement("div");
   bubble.className = "bubble";
@@ -134,13 +284,15 @@ function appendUserMessage(text) {
   content.appendChild(bubble);
   chatEl.appendChild(row);
   scrollBottom();
+  if (persist) persistMessage("user", row.outerHTML);
 }
 
-function appendCoachMessage(text) {
+function appendCoachMessage(text, persist = true) {
   const { row, content } = buildRow("coach");
   content.appendChild(parseCoachContent(text));
   chatEl.appendChild(row);
   scrollBottom();
+  if (persist) persistMessage("coach", row.outerHTML);
 }
 
 function appendErrorMessage(text) {
@@ -156,31 +308,26 @@ function appendErrorMessage(text) {
 function showTyping() {
   const row = document.createElement("div");
   row.id = "typing-row";
-
   const icon = document.createElement("div");
   icon.className = "typing-icon";
   icon.textContent = "🗣️";
-
   const dots = document.createElement("div");
   dots.className = "typing-dots";
   dots.innerHTML = "<span></span><span></span><span></span>";
-
   row.appendChild(icon);
   row.appendChild(dots);
   chatEl.appendChild(row);
   scrollBottom();
 }
 
-function hideTyping() {
-  document.getElementById("typing-row")?.remove();
-}
+function hideTyping() { document.getElementById("typing-row")?.remove(); }
 
 function setLoading(on) {
   sendBtn.disabled = on;
   inputEl.disabled = on;
 }
 
-/* ── API call (via Netlify Function) ──────────────────────────────────────── */
+/* ── API call ─────────────────────────────────────────────────────────────── */
 async function sendMessage(text) {
   text = text.trim();
   if (!text) return;
@@ -200,10 +347,7 @@ async function sendMessage(text) {
     });
 
     const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data?.error?.message || `HTTP ${res.status}`);
-    }
+    if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
 
     const reply = data.choices[0].message.content.trim();
     history.push({ role: "assistant", content: reply });
@@ -222,10 +366,7 @@ async function sendMessage(text) {
 sendBtn.addEventListener("click", () => sendMessage(inputEl.value));
 
 inputEl.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage(inputEl.value);
-  }
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(inputEl.value); }
 });
 
 inputEl.addEventListener("input", () => {
@@ -233,11 +374,12 @@ inputEl.addEventListener("input", () => {
   inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
 });
 
-/* ── Initial greeting ─────────────────────────────────────────────────────── */
-appendCoachMessage(
-  `Hello! [PT: Olá!] I'm DailySpeak, your English coach. [PT: Eu sou o DailySpeak, seu professor de inglês.] 😊
+/* ── Init ─────────────────────────────────────────────────────────────────── */
+const savedActive = localStorage.getItem(LS_ACTIVE);
+const savedConv   = convs.find(c => c.id === savedActive);
 
-I'm here to help you practice speaking English every day. [PT: Estou aqui para te ajudar a praticar inglês todo dia.]
-
-Let's start simple — What is your name? [PT: Vamos começar simples — Qual é o seu nome?]`
-);
+if (savedConv) {
+  loadConv(savedConv.id);
+} else {
+  startNewConv();
+}

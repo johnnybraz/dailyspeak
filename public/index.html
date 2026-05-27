@@ -13,44 +13,66 @@
 
 <div id="app">
 
-  <!-- Header -->
-  <div id="header">
-    <div class="header-avatar">🗣️</div>
-    <div class="header-info">
-      <h1>DailySpeak</h1>
-      <p>English conversation coach</p>
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <button id="new-chat-btn" title="Nova conversa">
+        <svg viewBox="0 0 24 24"><path d="M19 11H13V5a1 1 0 0 0-2 0v6H5a1 1 0 0 0 0 2h6v6a1 1 0 0 0 2 0v-6h6a1 1 0 0 0 0-2z"/></svg>
+        Nova conversa
+      </button>
     </div>
-    <div class="header-status">
-      <span class="status-dot"></span>
-      Online
-      <span class="level-badge">A1 · A2</span>
+    <div id="sidebar-section-label">Conversas</div>
+    <div id="conv-list">
+      <div id="sidebar-empty">Nenhuma conversa ainda.<br/>Comece digitando uma mensagem.</div>
     </div>
-    <button id="translate-btn" title="Ver traduções em português">🇧🇷</button>
   </div>
 
-  <!-- Chat -->
-  <div id="chat"></div>
+  <!-- Main -->
+  <div id="main">
 
-  <!-- Input -->
-  <div id="input-area">
-    <textarea
-      id="user-input"
-      rows="1"
-      placeholder="Type in English (or Portuguese) …"
-      autocomplete="off"
-      spellcheck="true"
-    ></textarea>
-    <button id="send-btn" title="Send message (Enter)">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-      </svg>
-    </button>
-  </div>
+    <!-- Header -->
+    <div id="header">
+      <button id="sidebar-toggle" title="Mostrar/esconder histórico">
+        <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+      </button>
+      <div class="header-avatar">🗣️</div>
+      <div class="header-info">
+        <h1>DailySpeak</h1>
+        <p>English conversation coach</p>
+      </div>
+      <div class="header-status">
+        <span class="status-dot"></span>
+        Online
+        <span class="level-badge">A1 · A2</span>
+      </div>
+      <button id="translate-btn" class="icon-btn" title="Ver traduções em português">🇧🇷</button>
+      <button id="theme-btn" class="icon-btn" title="Alternar tema escuro">🌙</button>
+    </div>
 
-  <!-- Footer hint -->
-  <div id="footer-hint">Press <kbd style="font-family:inherit;font-size:10px;background:#f0f2f5;padding:1px 5px;border-radius:4px;border:1px solid #dde1e9">Enter</kbd> to send &nbsp;·&nbsp; <kbd style="font-family:inherit;font-size:10px;background:#f0f2f5;padding:1px 5px;border-radius:4px;border:1px solid #dde1e9">Shift+Enter</kbd> for new line</div>
+    <!-- Chat -->
+    <div id="chat"></div>
 
-</div>
+    <!-- Input -->
+    <div id="input-area">
+      <textarea
+        id="user-input"
+        rows="1"
+        placeholder="Type in English (or Portuguese) …"
+        autocomplete="off"
+        spellcheck="true"
+      ></textarea>
+      <button id="send-btn" title="Enviar (Enter)">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <div id="footer-hint">
+      <kbd>Enter</kbd> para enviar &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> nova linha
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
 
 <script src="main.js"></script>
 </body>
