@@ -1,0 +1,7 @@
+.env
+node_modules/
+.netlify/
+.claude/
+CLAUDE.md
+deno.lock
+index.html

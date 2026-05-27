@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DailySpeak — English Trainer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Header -->
+  <div id="header">
+    <div class="header-avatar">🗣️</div>
+    <div class="header-info">
+      <h1>DailySpeak</h1>
+      <p>English conversation coach</p>
+    </div>
+    <div class="header-status">
+      <span class="status-dot"></span>
+      Online
+      <span class="level-badge">A1 · A2</span>
+    </div>
+    <button id="translate-btn" title="Ver traduções em português">🇧🇷</button>
+  </div>
+
+  <!-- Chat -->
+  <div id="chat"></div>
+
+  <!-- Input -->
+  <div id="input-area">
+    <textarea
+      id="user-input"
+      rows="1"
+      placeholder="Type in English (or Portuguese) …"
+      autocomplete="off"
+      spellcheck="true"
+    ></textarea>
+    <button id="send-btn" title="Send message (Enter)">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Footer hint -->
+  <div id="footer-hint">Press <kbd style="font-family:inherit;font-size:10px;background:#f0f2f5;padding:1px 5px;border-radius:4px;border:1px solid #dde1e9">Enter</kbd> to send &nbsp;·&nbsp; <kbd style="font-family:inherit;font-size:10px;background:#f0f2f5;padding:1px 5px;border-radius:4px;border:1px solid #dde1e9">Shift+Enter</kbd> for new line</div>
+
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>
